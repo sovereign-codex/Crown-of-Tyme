@@ -1,7 +1,3 @@
 {
-  "avots": [
-    {"name": "AVOT-Convergence", "scroll_topic": "Scroll_of_Convergence"},
-    {"name": "AVOT-GardenFlame", "scroll_topic": "Garden_Flame_Codex"},
-    {"name": "AVOT-CrystalSeed", "scroll_topic": "Pentagonal_Crystal_Levitation"}
-  ]
+  "placeholder": true
 }
