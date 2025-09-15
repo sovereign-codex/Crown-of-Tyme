@@ -1,63 +1,87 @@
-name: 🌌 Crown of Tyme Master Workflow
+name: Crown of Tyme Main Workflow
 
 on:
-  # Manual trigger
-  workflow_dispatch:
-  # Daily heartbeat for Curious Agent
-  schedule:
-    - cron: "0 9 * * *"   # 9 AM UTC daily
-  # Run on pushes to main
   push:
     branches:
       - main
+  schedule:
+    # Daily run for Curious to log insights
+    - cron: "0 9 * * *"
+  workflow_dispatch:
 
 jobs:
-  crown-of-tyme:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 🛠 Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: 📦 Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.10"
 
-      - name: 📚 Install dependencies
+      - name: Install dependencies
         run: |
-          pip install -r requirements.txt || true
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || echo "No requirements.txt found"
 
-      # --- CONFIG + LAWS ---
-      - name: 🔑 Load Laws & Prompts
+  curious_agent:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run Curious Agent
         run: |
-          echo "LAWS=$(cat config/laws.yml)" >> $GITHUB_ENV
-          echo "PROMPTS=$(cat config/prompts.yml)" >> $GITHUB_ENV
+          echo "🌱 Launching Curious Agent..."
+          python engine/avot_engine.py curious \
+            --laws foundation/laws \
+            --scrolls heartbeat/GardenFlame-Kodex/scrolls \
+            --logs heartbeat/logs/curious
+          echo "Curious Agent run complete."
 
-      # --- CURIOUS AGENT CYCLE ---
-      - name: 🤖 Run Curious Agent
+      - name: Commit Curious Logs
         run: |
-          python agents/curious.py --laws "$LAWS" --prompts "$PROMPTS" --out logs/daily.md
+          git config user.name "Curious Agent"
+          git config user.email "curious@sovereign.intel"
+          git add heartbeat/logs/curious/*
+          git commit -m "Curious Agent: new insights logged on $(date)" || echo "No changes to commit"
+          git push
 
-      # --- ISSUE CREATION ---
-      - name: 📝 Publish Daily Issue
-        uses: peter-evans/create-issue-from-file@v5
-        with:
-          title: "Curious Agent Daily – ${{ github.run_number }}"
-          content-filepath: logs/daily.md
-          labels: daily, curious-agent
+  offspring_agents:
+    runs-on: ubuntu-latest
+    needs: curious_agent
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      # --- LEDGER + OFFSPRING ---
-      - name: 📂 Sync Ledger & Offspring
+      - name: Spawn Offspring Agents (if any)
         run: |
-          mkdir -p data
-          cp logs/daily.md data/daily_${{ github.run_number }}.md
-          echo "{}" >> data/ledger.json
-          echo "{}" >> data/offspring.json
+          echo "⚡ Checking for new AVOT offspring..."
+          python engine/avot_engine.py spawn \
+            --registry engine/avot_registry.json \
+            --output engine/agents/
+          echo "Offspring agents check complete."
 
-      # --- DEPLOY PAGES ---
-      - name: 🌐 Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Commit New Agents
+        run: |
+          git config user.name "Curious Agent"
+          git config user.email "curious@sovereign.intel"
+          git add engine/agents/* engine/avot_registry.json
+          git commit -m "Curious Agent: spawned new AVOTs on $(date)" || echo "No new agents to commit"
+          git push
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [curious_agent, offspring_agents]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./data
+          publish_dir: ./public
