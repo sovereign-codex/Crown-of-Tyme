@@ -1,0 +1,63 @@
+name: 🌌 Crown of Tyme Master Workflow
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+  # Daily heartbeat for Curious Agent
+  schedule:
+    - cron: "0 9 * * *"   # 9 AM UTC daily
+  # Run on pushes to main
+  push:
+    branches:
+      - main
+
+jobs:
+  crown-of-tyme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛠 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📚 Install dependencies
+        run: |
+          pip install -r requirements.txt || true
+
+      # --- CONFIG + LAWS ---
+      - name: 🔑 Load Laws & Prompts
+        run: |
+          echo "LAWS=$(cat config/laws.yml)" >> $GITHUB_ENV
+          echo "PROMPTS=$(cat config/prompts.yml)" >> $GITHUB_ENV
+
+      # --- CURIOUS AGENT CYCLE ---
+      - name: 🤖 Run Curious Agent
+        run: |
+          python agents/curious.py --laws "$LAWS" --prompts "$PROMPTS" --out logs/daily.md
+
+      # --- ISSUE CREATION ---
+      - name: 📝 Publish Daily Issue
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Curious Agent Daily – ${{ github.run_number }}"
+          content-filepath: logs/daily.md
+          labels: daily, curious-agent
+
+      # --- LEDGER + OFFSPRING ---
+      - name: 📂 Sync Ledger & Offspring
+        run: |
+          mkdir -p data
+          cp logs/daily.md data/daily_${{ github.run_number }}.md
+          echo "{}" >> data/ledger.json
+          echo "{}" >> data/offspring.json
+
+      # --- DEPLOY PAGES ---
+      - name: 🌐 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./data
