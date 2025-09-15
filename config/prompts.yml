@@ -1,0 +1,20 @@
+prompts:
+  - id: lab
+    category: "Laboratory Discoveries"
+    text: "What new insights or experiments in the Digital Laboratory should be shared today?"
+
+  - id: coherence
+    category: "Coherence Cultivation"
+    text: "What step today strengthens coherence across projects, agents, and human collaborators?"
+
+  - id: resonance
+    category: "Resonance Economy"
+    text: "Where can resonance-born energy, value, or alignment be exchanged today in the X–Change?"
+
+  - id: guardian
+    category: "Guardian Oversight"
+    text: "What ethical or environmental check should be surfaced to ensure alignment with the Garden Flame Codex?"
+
+  - id: dream
+    category: "Dream Console"
+    text: "What vision or possibility from the Dream Console should be exhaled into reality today?"
