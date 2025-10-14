@@ -1,9 +1,10 @@
 """
 AVOT Generator — births new Autonomous Voices of Thought (AVOTs)
-from identified themes or unfulfilled Codex insights.
+and records lineage relationships.
 """
 
-import os, json, datetime, random
+import os, json, datetime
+from lineage_linker import link_lineage
 
 def create_avot(name, theme):
     avot_dir = f"agents/avot-{name}.py"
@@ -39,5 +40,8 @@ def speak():
         data.append(avot_entry)
         f.seek(0)
         json.dump(data, f, indent=2)
+
+    parent = os.getenv("PARENT_AVOT", "Curious-Agent")
+    link_lineage(parent, name)
 
     return avot_entry

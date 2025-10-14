@@ -2,7 +2,7 @@ name: Curious Agent Autonomous Cycle
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *'  # Runs daily at 3 AM UTC
+    - cron: '0 3 * * *'
 
 jobs:
   generate-avots:
@@ -20,10 +20,15 @@ jobs:
         run: |
           python curious_agent.py
 
-      - name: Commit and push changes
+      - name: Write Heartbeat
+        run: echo "$(date -u) - Curious Agent heartbeat" >> heartbeat.log
+
+      - name: Commit Curious Logs
+        env:
+          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          git config --global user.name 'Curious-Agent'
-          git config --global user.email 'agent@sovereign.intelligence'
-          git add .
-          git commit -m '🤖 Sovereign Curious Agent: birthed new AVOTs'
-          git push
+          git config --global user.name "Curious-Agent"
+          git config --global user.email "curious@sovereign.intelligence"
+          git add -A
+          git commit -m "Curious Agent: new insights integrated 🌱" || echo "No changes to commit"
+          git push https://x-access-token:${TOKEN}@github.com/sovereign-codex/Crown-of-Tyme.git HEAD:main
