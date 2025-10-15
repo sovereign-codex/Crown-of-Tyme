@@ -1,0 +1,37 @@
+name: curious-agent-sync
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install requests pyyaml openai  # extend as needed
+
+      - name: Run Curious Agent
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python codex/curious_agent.py --source ./codex/book_of_tyme/ \
+                                        --manifest ./manifests/ \
+                                        --avot ./avot/
+
+      - name: Commit and Push updates
+        run: |
+          git config --global user.name "Sovereign-Codex"
+          git config --global user.email "builder@sovereigncodex.org"
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Curious-Agent Sync – $(date)"
+          git push
